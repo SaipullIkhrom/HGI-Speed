@@ -58,10 +58,15 @@ export const createOrder = async (req, res) => {
       const currentStock = productRows[0].stock;
       if (currentStock < item.quantity) throw new Error(`Stok "${productRows[0].name}" tidak mencukupi!`);
 
-      // 🛠️ FIX FIX FINAL: Kita masukkan ke kolom 'price' DAN 'price_at_purchase' biar database tidak protes!
+      // 🧮 HITUNG SUBTOTAL SECARA OTOMATIS
+      const itemPrice = Number(item.price);
+      const itemQuantity = Number(item.quantity);
+      const subtotal = itemPrice * itemQuantity;
+
+      // 🛠️ FIX TOTAL: Kita masukkan semua kolom yang mungkin diminta database ('price', 'price_at_purchase', dan 'subtotal')
       await connection.query(
-        'INSERT INTO order_items (order_id, product_id, quantity, price, price_at_purchase) VALUES (?, ?, ?, ?, ?)',
-        [newOrderId, item.id, item.quantity, Number(item.price), Number(item.price)]
+        'INSERT INTO order_items (order_id, product_id, quantity, price, price_at_purchase, subtotal) VALUES (?, ?, ?, ?, ?, ?)',
+        [newOrderId, item.id, itemQuantity, itemPrice, itemPrice, subtotal]
       );
 
       // 2. Update stok dan jumlah terjual produk masing-masing secara terpisah
