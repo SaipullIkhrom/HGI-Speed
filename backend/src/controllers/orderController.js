@@ -28,20 +28,22 @@ export const createOrder = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // A. Masukkan data induk pesanan ke tabel orders
+    // A. MASUKKAN DATA INDUK PESANAN (KOLOM total_amount SEKARANG SUDAH DIISI 🚀)
     const insertOrderQuery = `
       INSERT INTO orders
-        (user_id, order_number, customer_name, customer_phone, shipping_address, total_payment, payment_method, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (user_id, order_number, customer_name, customer_phone, shipping_address, total_amount, total_payment, payment_method, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
+    // Kita passing nilai Number(total_payment) ke dalam dua tempat (untuk total_amount dan total_payment)
     const [orderResult] = await connection.query(insertOrderQuery, [
       user_id || null,
       orderNumber,
       customer_name,
       customer_phone,
       shipping_address,
-      Number(total_payment),
+      Number(total_payment), // ⬅️ Mengisi total_amount biar Railway tidak marah lagi!
+      Number(total_payment), // ⬅️ Mengisi total_payment
       payment_method || 'COD',
       'Baru'
     ]);
