@@ -58,10 +58,10 @@ export const createOrder = async (req, res) => {
       const currentStock = productRows[0].stock;
       if (currentStock < item.quantity) throw new Error(`Stok "${productRows[0].name}" tidak mencukupi!`);
 
-      // 1. Masukkan data ke order_items secara spesifik per product_id
+      // 🛠️ FIX FIX FINAL: Kita masukkan ke kolom 'price' DAN 'price_at_purchase' biar database tidak protes!
       await connection.query(
-        'INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)',
-        [newOrderId, item.id, item.quantity, Number(item.price)]
+        'INSERT INTO order_items (order_id, product_id, quantity, price, price_at_purchase) VALUES (?, ?, ?, ?, ?)',
+        [newOrderId, item.id, item.quantity, Number(item.price), Number(item.price)]
       );
 
       // 2. Update stok dan jumlah terjual produk masing-masing secara terpisah
