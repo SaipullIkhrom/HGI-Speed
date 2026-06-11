@@ -1,0 +1,220 @@
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Container } from '../layout/Container';
+import { FaCartPlus, FaHeart, FaRegHeart, FaSearch, FaStar, FaCheckCircle } from 'react-icons/fa';
+import { useCart } from "../../context/CartContext";
+import { useWishlist } from "../../context/WishlistContext";
+import CategorySidebar from './CategorySidebar';
+import PromoBanner from './PromoBanner';
+import { useTranslation } from 'react-i18next';
+import { useCurrency } from '../../context/CurrencyContext';
+import { BASE_URL } from "../../config/api";
+
+const AllProducts = ({ products = [] }) => {
+  const { addToCart } = useCart();
+  const { wishlist, toggleWishlist } = useWishlist();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // 🛠️ INISIALISASI HOOKS GLOBAL
+  const { t } = useTranslation();
+  const { formatPrice } = useCurrency();
+
+  const isPromoMode = searchParams.get('promo') === 'true';
+  const activeCategory = searchParams.get('category') || '';
+
+  // Logika Filter Produk dari Database Induk
+  const filteredProducts = products.filter((prod) => {
+    const hasDiscount = prod.discount_percentage && Number(prod.discount_percentage) > 0;
+
+    if (isPromoMode && !hasDiscount) return false;
+
+    const matchesSearch =
+      prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (prod.brand_name && prod.brand_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (prod.motor_type && prod.motor_type.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    return matchesSearch;
+  });
+
+  return (
+    <section className="py-12 bg-gray-50 border-t border-gray-100 select-none">
+      <Container>
+
+        {/* TOPBAR: HEADER & SEARCH BAR LOKAL */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-5">
+          <div>
+            <h3 className="font-heading text-xl font-black text-slate-950 uppercase tracking-tight">
+              {isPromoMode ? t('promo_title') : t('all_products_title')}
+            </h3>
+            <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+              {isPromoMode ? t('promo_desc') : t('all_products_desc')}
+            </p>
+          </div>
+
+          <div className="relative w-full md:w-80">
+            <input
+              type="text"
+              placeholder={t('search_local_placeholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white border border-gray-200 text-xs pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-[#e11d48] focus:ring-1 focus:ring-[#e11d48]/20 text-gray-700 shadow-sm transition-all"
+            />
+            <FaSearch className="absolute left-3.5 top-3.5 text-gray-400 text-xs" />
+          </div>
+        </div>
+
+        {/* SUNTIKAN BANNER STRATEGIS */}
+        <PromoBanner />
+
+        {/* LAYOUT GRID UTAMA: SIDEBAR (LEFT) & CATALOG (RIGHT) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          {/* SISI KIRI: SIDEBAR FILTER KATEGORI */}
+          <div className="lg:col-span-3 w-full lg:sticky lg:top-24">
+            <CategorySidebar />
+          </div>
+
+          {/* SISI KANAN: GRID LIST KATALOG PRODUK */}
+          <div className="lg:col-span-9 w-full">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-20 bg-white border border-gray-200/60 rounded-3xl max-w-md mx-auto shadow-sm">
+                <p className="text-sm font-bold text-gray-800">{t('product_not_found')}</p>
+                <p className="text-[11px] text-gray-400 mt-1 leading-relaxed px-4">
+                  {t('product_not_found_desc')} {activeCategory && `("${activeCategory}")`}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                {filteredProducts.map((prod) => {
+                  const isFavorite = wishlist.some((item) => item.id === prod.id);
+                  const currentRating = prod.rating ? Number(prod.rating) : 0;
+
+                  const originalPrice = Number(prod.price) || 0;
+                  const discountPercent = Number(prod.discount_percentage) || 0;
+                  const finalPrice = originalPrice - (originalPrice * discountPercent / 100);
+
+                  return (
+                    <div
+                      key={prod.id}
+                      className="bg-white rounded-2xl border border-gray-100 hover:border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between relative"
+                    >
+                      {/* Badge Diskon */}
+                      {discountPercent > 0 && (
+                        <span className="absolute top-3 left-3 bg-[#e11d48] text-white text-[9px] font-black px-2 py-0.5 rounded-md z-10 font-mono shadow-sm">
+                          -{discountPercent}%
+                        </span>
+                      )}
+
+                      {/* Wishlist Button */}
+                      <button
+                        onClick={() => toggleWishlist(prod)}
+                        className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-sm border border-gray-100/60 transition-all active:scale-95 hover:bg-gray-50"
+                      >
+                        {isFavorite ? (
+                          <FaHeart className="text-[#e11d48] scale-105 transition-transform" />
+                        ) : (
+                          <FaRegHeart className="text-gray-400 hover:text-[#e11d48] transition-colors" />
+                        )}
+                      </button>
+
+                      {/* IMAGE FRAME */}
+                      <div className="relative bg-gray-50 w-full pt-[100%] overflow-hidden border-b border-gray-100">
+                        {prod.image ? (
+                          <img
+                            src={`${BASE_URL}/uploads/products/${prod.image}`}
+                            alt={prod.name}
+                            className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 p-2"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-100 p-4 text-center uppercase">
+                            {prod.name.substring(0, 15)}...
+                          </div>
+                        )}
+                      </div>
+
+                      {/* DETAIL PRODUK */}
+                      <div className="p-4 flex-grow flex flex-col justify-between">
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide bg-gray-50 border border-gray-200/60 px-2 py-0.5 rounded w-max mb-1.5">
+                            {prod.brand_name || 'Universal'} {prod.motor_type || ''}
+                          </p>
+
+                          <h4 className="text-xs font-bold text-gray-700 line-clamp-2 group-hover:text-[#e11d48] transition-colors leading-snug tracking-tight mb-2">
+                            {prod.name}
+                          </h4>
+
+                          {/* RATING */}
+                          <div className="flex items-center gap-2 mb-2 text-[10px] text-gray-500">
+                            {currentRating > 0 ? (
+                              <div className="flex items-center gap-0.5 bg-amber-50 text-amber-700 font-bold px-1.5 py-0.5 rounded border border-amber-200/40">
+                                <FaStar className="text-amber-400" size={10} />
+                                <span>{currentRating.toFixed(1)}</span>
+                              </div>
+                            ) : (
+                              <div className="text-gray-400 text-[9px] italic">{t('no_reviews')}</div>
+                            )}
+                            <span className="text-gray-300">|</span>
+                            <span className="font-medium text-gray-500">
+                              {t('sold')} <span className="font-bold text-gray-700">{prod.sold || 0}</span>
+                            </span>
+                          </div>
+
+                          {/* STOK */}
+                          <div className="flex items-center gap-1 text-[10px] mb-3">
+                            {prod.stock > 0 ? (
+                              <div className="flex items-center gap-1 text-emerald-600 font-medium">
+                                <FaCheckCircle size={10} />
+                                <span>{t('remaining')} <span className="font-bold font-mono">{prod.stock}</span> {t('pcs')}</span>
+                              </div>
+                            ) : (
+                              <span className="text-red-500 font-bold bg-red-50 border border-red-100 px-1.5 py-0.5 rounded">
+                                {t('out_of_stock')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* HARGA & TOMBOL BELI */}
+                        <div>
+                          <div className="flex flex-col gap-0.5 mb-3">
+                            <span className="text-sm font-black text-[#e11d48] font-mono leading-none">
+                              {/* 🛠️ OTOMATIS BERUBAH SESUAI KURS & NEGARA */}
+                              {formatPrice(finalPrice)}
+                            </span>
+                            {discountPercent > 0 && (
+                              <span className="text-[10px] text-gray-400 line-through font-mono">
+                                {/* 🛠️ OTOMATIS BERUBAH SESUAI KURS & NEGARA */}
+                                {formatPrice(originalPrice)}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => addToCart({ ...prod, price: finalPrice })}
+                            disabled={prod.stock <= 0}
+                            className={`w-full text-white text-[11px] py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm uppercase tracking-wider ${
+                              prod.stock > 0
+                                ? 'bg-gray-900 hover:bg-[#e11d48] active:scale-95'
+                                : 'bg-gray-300 cursor-not-allowed shadow-none'
+                            }`}
+                          >
+                            <FaCartPlus size={11} /> {prod.stock > 0 ? t('buy') : t('out_of_stock')}
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </Container>
+    </section>
+  );
+};
+
+export default AllProducts;
