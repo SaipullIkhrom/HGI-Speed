@@ -1,3 +1,4 @@
+import { useEffect } from 'react'; // 🛡️ FIX: Import useEffect di paling atas agar tidak error ESLint
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import Navbar from '../layout/Navbar';
@@ -17,6 +18,19 @@ const Wishlist = () => {
   // 🛠️ INISIALISASI HOOKS GLOBAL
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
+
+  // =====================================================================
+  // 🛡️ SECURITY FIX: BLOKIR AKSES WISHLIST JIKA BELUM LOGIN
+  // =====================================================================
+  useEffect(() => {
+    const token = localStorage.getItem('token'); // Pastikan key sesuai dengan storage login tokomu
+
+    if (!token) {
+      alert('Akses ditolak! Kamu harus login terlebih dahulu untuk melihat wishlist.');
+      navigate('/login');
+    }
+  }, [navigate]);
+  // =====================================================================
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-700 flex flex-col justify-between font-sans antialiased">
@@ -91,7 +105,6 @@ const Wishlist = () => {
                       {prod.name}
                     </h4>
                     <div className="text-sm font-black text-[#e11d48] font-mono pt-1">
-                      {/* 🛠️ HARGA OTOMATIS BERUBAH SESUAI KURS */}
                       {formatPrice(prod.price)}
                     </div>
                   </div>

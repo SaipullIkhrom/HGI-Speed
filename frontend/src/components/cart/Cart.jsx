@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 import Navbar from '../layout/Navbar';
 import Footer from '../layout/Footer';
@@ -7,17 +8,30 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '../../context/CurrencyContext';
 import { BASE_URL } from "../../config/api";
-
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
-
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
 
   const totalPayment = cart.reduce((total, item) => total + item.price * item.quantity, 0);
   const totalItems = cart.reduce((a, b) => a + b.quantity, 0);
 
+  // =====================================================================
+  // 🛡️ SECURITY FIX: BLOKIR AKSES JIKA BELUM LOGIN
+  // =====================================================================
+  useEffect(() => {
+    // Cek apakah ada data token/user di localStorage (sesuaikan dengan nama penyimpanan loginmu)
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Opsi: Bisa kasih alert biar user nggak kaget kenapa tiba-tiba pindah
+      alert('Akses ditolak! Kamu harus login dulu untuk melihat keranjang belanja.');
+
+      // Tendang langsung ke halaman login
+      navigate('/login');
+    }
+  }, [navigate]);
   return (
     <div className="min-h-screen bg-[#f8f7f5] flex flex-col font-sans antialiased text-slate-700 selection:bg-[#e11d48] selection:text-white">
       <Navbar />
