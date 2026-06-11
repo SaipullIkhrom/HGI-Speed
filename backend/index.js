@@ -20,7 +20,7 @@ import currencyRoutes from './src/routes/currencyRoutes.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+  port: Number(process.env.DB_PORT) || 3306
 
 // ==========================================
 // MIDDLEWARE GLOBAL
