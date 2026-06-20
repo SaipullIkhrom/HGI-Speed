@@ -9,7 +9,7 @@ const AdminSettings = () => {
   const [shopProfile, setShopProfile] = useState({
     name: 'HGI SPEED',
     tagline: 'Professional Motorcycle Parts & Custom Engineering Components',
-    whatsapp: '081234567890',
+    whatsapp: '0896-0421-0396',
     address: 'Jl. Raya Puspitek, Tangerang Selatan, Banten',
     critical_limit: 5
   });

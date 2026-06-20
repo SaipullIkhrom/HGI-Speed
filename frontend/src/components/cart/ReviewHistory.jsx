@@ -14,7 +14,7 @@ const ReviewHistory = () => {
   const [activeModalItem, setActiveModalItem] = useState(null);
   const [triggerFetch, setTriggerFetch] = useState(0);
 
-  const { t } = useTranslation(); // 👈 2. INISIALISASI TRANSLATOR
+  const { t } = useTranslation(); 
 
   const localUserData = localStorage.getItem('user');
   const user = localUserData ? JSON.parse(localUserData) : null;

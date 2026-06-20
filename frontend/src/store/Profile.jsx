@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   FaUserCircle, FaBoxOpen, FaSignOutAlt, FaCogs, FaChevronRight,
   FaMapMarkerAlt, FaArrowLeft, FaCheckCircle, FaShoppingBag,
-  FaCommentMedical, FaCoins, FaTicketAlt, FaMotorcycle, FaHeadset
+  FaCommentMedical, FaCoins, FaTicketAlt, FaMotorcycle, FaHeadset, FaStar
 } from 'react-icons/fa';
 import { Container } from '../components/layout/Container';
 import OrderTrackingModal from '../components/tools/OrderTrackingModal';
@@ -17,6 +17,9 @@ const Profile = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  // --- STATE UNTUK SLIDER BACKGROUND ---
+  const [currentBg, setCurrentBg] = useState(0);
+
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
 
@@ -24,6 +27,22 @@ const Profile = () => {
   const user = localUserData ? JSON.parse(localUserData) : null;
   const activeUserId = user ? user.id : null;
 
+  // --- GAMBAR SLIDESHOW BACKGROUND PREMIUM ---
+  const bgImages = [
+    "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=2070&auto=format&fit=crop", // Detail Mesin
+    "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop", // Suasana Garasi
+    "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?q=80&w=2070&auto=format&fit=crop"  // Siluet Motor Sport
+  ];
+
+  // --- EFFECT: LOGIKA AUTO SLIDE (Ganti tiap 5 detik) ---
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setCurrentBg((prev) => (prev + 1) % bgImages.length);
+    }, 5000);
+    return () => clearInterval(slideTimer);
+  }, [bgImages.length]);
+
+  // --- EFFECT: FETCH RIWAYAT PESANAN ---
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
@@ -48,7 +67,7 @@ const Profile = () => {
   }, [activeUserId]);
 
   const handleLogout = () => {
-    if (confirm(t('logout_confirm'))) {
+    if (confirm(t('logout_confirm') || 'Yakin ingin keluar dari akunmu?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       navigate('/');
@@ -58,12 +77,15 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center font-sans text-center px-4">
-        <FaUserCircle className="text-slate-300 text-6xl mb-3 animate-pulse" />
-        <h3 className="text-base font-black text-[#0f172a] uppercase tracking-tight">{t('not_logged_in_title')}</h3>
-        <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">{t('not_logged_in_desc')}</p>
-        <button onClick={() => navigate('/login')} className="mt-5 bg-[#e11d48] hover:bg-red-700 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg shadow-red-100 transition-all uppercase tracking-widest active:scale-95">
-          {t('login_now_btn')}
+      <div className="min-h-[70vh] flex flex-col items-center justify-center font-sans text-center px-4 bg-slate-50">
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-red-100 rounded-full blur-xl opacity-60 animate-pulse"></div>
+          <FaUserCircle className="relative text-slate-200 text-7xl bg-white rounded-full shadow-xl" />
+        </div>
+        <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest">{t('not_logged_in_title') || 'Akses Ditolak'}</h3>
+        <p className="text-xs text-slate-500 mt-2 max-w-xs leading-relaxed font-medium">{t('not_logged_in_desc') || 'Silakan masuk ke akunmu terlebih dahulu untuk melihat dashboard profil.'}</p>
+        <button onClick={() => navigate('/login')} className="mt-8 bg-slate-900 hover:bg-[#e11d48] text-white font-black text-[11px] px-8 py-4 rounded-2xl shadow-lg hover:shadow-red-500/30 transition-all uppercase tracking-widest active:scale-95">
+          {t('login_now_btn') || 'Masuk Sekarang'}
         </button>
       </div>
     );
@@ -72,286 +94,334 @@ const Profile = () => {
   const totalSpent = orders.filter(o => o.status === 'Selesai').reduce((acc, curr) => acc + Number(curr.item_subtotal || curr.price || 0), 0);
 
   return (
-    <div className="bg-slate-50/60 min-h-screen font-sans pb-24 text-slate-700 selection:bg-[#e11d48] selection:text-white select-none">
+    <div className="bg-[#f8f9fa] min-h-screen font-sans pb-24 text-slate-700 selection:bg-[#e11d48] selection:text-white select-none relative z-0">
 
-      {/* Background Aksen Garasi Premium */}
-      <div className="absolute top-0 left-0 right-0 h-64 bg-slate-900 overflow-hidden -z-10">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
-        <div className="absolute -right-32 -top-32 w-96 h-96 bg-[#e11d48]/20 rounded-full blur-[100px]"></div>
+      {/* =========================================================
+          LUXURY AUTO-SLIDING BACKGROUND
+      ========================================================= */}
+      <div className="absolute top-0 left-0 right-0 h-[340px] bg-slate-950 overflow-hidden -z-10 rounded-b-[2rem] shadow-2xl">
+        {/* Array Gambar dengan Efek Crossfade (Memudar Alus) */}
+        {bgImages.map((img, index) => (
+          <img
+            key={index}
+            src={img}
+            alt="Garage Background"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+              index === currentBg ? 'opacity-40' : 'opacity-0'
+            }`}
+          />
+        ))}
+
+        {/* Overlay Gradients supaya UI di depannya tetap terbaca jelas */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-transparent to-[#e11d48]/30 mix-blend-multiply"></div>
+        <div className="absolute -left-32 -top-32 w-[500px] h-[500px] bg-[#e11d48]/20 rounded-full blur-[120px]"></div>
+        <div className="absolute right-0 bottom-0 w-full h-32 bg-gradient-to-t from-slate-950 to-transparent opacity-90"></div>
       </div>
+      {/* ========================================================= */}
 
-      <Container className="max-w-5xl pt-8 sm:pt-10 space-y-5 px-4 sm:px-6">
+      <Container className="max-w-6xl pt-8 sm:pt-12 space-y-6 px-4 sm:px-6">
 
-        {/* TOMBOL KEMBALI */}
+        {/* BREADCRUMB / BACK BUTTON */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-[10px] font-black text-slate-300 hover:text-white transition-all group tracking-widest bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-xl shadow-sm active:scale-95 w-max"
+          className="flex items-center gap-2 text-[10px] font-black text-slate-300 hover:text-white transition-all group tracking-widest bg-slate-900/40 backdrop-blur-md border border-white/10 hover:border-white/30 px-4 py-2.5 rounded-2xl shadow-sm active:scale-95 w-max"
         >
-          <FaArrowLeft className="group-hover:-translate-x-0.5 transition-transform text-[#e11d48]" />
-          <span className="hidden xs:inline">{t('back_to_home_caps')}</span>
-          <span className="xs:hidden">Back</span>
+          <FaArrowLeft className="group-hover:-translate-x-1 transition-transform text-[#e11d48]" />
+          <span className="uppercase">{t('back_to_home_caps') || 'KEMBALI KE BERANDA'}</span>
         </button>
 
-        {/* ===== 1. HEADER KARTU SULTAN ===== */}
-        <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-6 md:p-8 shadow-2xl shadow-slate-200/50 flex flex-col lg:flex-row items-center gap-6 sm:gap-8 text-center lg:text-left relative overflow-hidden">
+        {/* ===== 1. SULTAN PROFILE HEADER ===== */}
+        <div className="bg-white/90 backdrop-blur-2xl border border-white/60 rounded-[2rem] p-6 sm:p-8 md:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex flex-col lg:flex-row items-center gap-8 relative overflow-hidden group mt-2">
 
-          {/* Avatar */}
-          <div className="relative flex-shrink-0 z-10 group">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#e11d48] to-purple-500 rounded-full blur-md opacity-40 group-hover:opacity-70 transition-opacity"></div>
-            {user.avatar ? (
-              <img
-                src={`${BASE_URL}/uploads/profiles/${user.avatar}`}
-                alt="Profile"
-                className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full object-cover border-4 border-white shadow-lg z-10"
-              />
-            ) : (
-              <FaUserCircle className="relative text-slate-300 bg-white rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 border-4 border-white shadow-lg z-10" />
-            )}
-            <span className={`absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-md z-20 ${user.role === 'admin' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#e11d48] via-purple-500 to-amber-500 opacity-80"></div>
+
+          <div className="relative flex-shrink-0 z-10">
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#e11d48] to-amber-400 rounded-full blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-700"></div>
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1 bg-gradient-to-tr from-slate-200 to-white shadow-xl z-10">
+              {user.avatar ? (
+                <img
+                  src={`${BASE_URL}/uploads/profiles/${user.avatar}`}
+                  alt="Profile"
+                  className="w-full h-full rounded-full object-cover border-4 border-white"
+                />
+              ) : (
+                <FaUserCircle className="w-full h-full text-slate-200 bg-white rounded-full border-4 border-white" />
+              )}
+              <div className={`absolute bottom-2 right-2 w-5 h-5 rounded-full border-4 border-white shadow-md z-20 ${user.role === 'admin' ? 'bg-amber-400' : 'bg-emerald-400'}`}></div>
+            </div>
           </div>
 
-          {/* Info User */}
-          <div className="flex-1 space-y-2 z-10 w-full lg:w-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 justify-center lg:justify-start">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">{user.name}</h2>
-              <span className={`inline-block self-center sm:self-auto px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border shadow-sm ${user.role === 'admin' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-gradient-to-r from-emerald-500 to-teal-400 text-white border-transparent'}`}>
-                {user.role === 'admin' ? 'Admin System' : 'VIP Pro Member'}
+          <div className="flex-1 text-center lg:text-left z-10 w-full lg:w-auto">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 mb-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{user.name}</h2>
+              <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border shadow-sm w-max mx-auto lg:mx-0 ${user.role === 'admin' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-900 border-slate-700 text-white'}`}>
+                {user.role === 'admin' ? <FaCogs size={10} /> : <FaStar size={10} className="text-amber-400" />}
+                {user.role === 'admin' ? 'Admin System' : 'Verified Member'}
               </span>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 font-mono font-medium break-all sm:break-normal">
-              {user.email}
-              <span className="hidden sm:inline"> • {user.phone || 'No. HP Belum Disetel'}</span>
-            </p>
-            <p className="sm:hidden text-[11px] text-slate-400 font-mono">{user.phone || 'No. HP Belum Disetel'}</p>
 
-            <div className="pt-3 flex gap-2 justify-center lg:justify-start">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-4 text-xs font-mono font-medium text-slate-500">
+              <span className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">{user.email}</span>
+              <span className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">{user.phone || 'No. HP Belum Disetel'}</span>
+            </div>
+
+            <div className="pt-5 flex gap-3 justify-center lg:justify-start">
               <button
                 onClick={() => navigate('/profile/settings')}
-                className="text-[10px] font-black uppercase tracking-widest text-white bg-slate-900 hover:bg-slate-800 px-4 sm:px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95"
+                className="text-[10px] font-black uppercase tracking-widest text-white bg-slate-900 hover:bg-[#e11d48] px-6 py-3 rounded-xl transition-all duration-300 shadow-lg shadow-slate-900/20 active:scale-95 flex items-center gap-2"
               >
-                ⚙️ {t('profile_settings_btn')}
+                <span>Pengaturan Akun</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-600 bg-white hover:bg-red-50 border border-slate-200 px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white bg-white hover:bg-slate-900 border border-slate-200 hover:border-slate-900 rounded-xl transition-all duration-300 shadow-sm active:scale-95"
+                title="Keluar"
               >
-                <FaSignOutAlt size={12} />
+                <FaSignOutAlt size={14} />
               </button>
             </div>
           </div>
 
-          {/* Panel Statistik */}
-          <div className="flex gap-3 sm:gap-4 z-10 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 scrollbar-none snap-x snap-mandatory lg:snap-none">
-            <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-orange-500/20 min-w-[100px] sm:min-w-[120px] flex-shrink-0 snap-start">
-              <FaCoins className="mb-1.5 sm:mb-2 opacity-80" size={16} />
-              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider opacity-90">{t('hgi_points')}</p>
-              <h4 className="text-lg sm:text-xl font-black font-mono mt-0.5 sm:mt-1">2,450</h4>
+          <div className="flex gap-3 sm:gap-4 z-10 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+            <div className="bg-white border border-slate-100 p-4 sm:p-5 rounded-2xl shadow-sm min-w-[130px] flex-shrink-0 flex flex-col justify-between group hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Poin HGI</p>
+                <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform"><FaCoins size={10} /></div>
+              </div>
+              <h4 className="text-xl font-black font-mono text-slate-800">2,450</h4>
             </div>
-            <div className="bg-gradient-to-br from-[#e11d48] to-rose-600 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-rose-500/20 min-w-[100px] sm:min-w-[120px] flex-shrink-0 snap-start">
-              <FaTicketAlt className="mb-1.5 sm:mb-2 opacity-80" size={16} />
-              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider opacity-90">{t('active_vouchers')}</p>
-              <h4 className="text-lg sm:text-xl font-black font-mono mt-0.5 sm:mt-1">3 {t('vouchers_available')}</h4>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-blue-500/20 min-w-[120px] sm:min-w-[140px] flex-shrink-0 snap-start">
-              <FaShoppingBag className="mb-1.5 sm:mb-2 opacity-80" size={16} />
-              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider opacity-90">{t('total_transactions')}</p>
-              <h4 className="text-xs sm:text-sm font-black font-mono mt-0.5 sm:mt-1 pt-0.5 sm:pt-1.5">{formatPrice(totalSpent)}</h4>
+
+            <div className="bg-white border border-slate-100 p-4 sm:p-5 rounded-2xl shadow-sm min-w-[130px] flex-shrink-0 flex flex-col justify-between group hover:border-[#e11d48]/30 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Voucher</p>
+                <div className="w-6 h-6 rounded-full bg-red-50 text-[#e11d48] flex items-center justify-center group-hover:scale-110 transition-transform"><FaTicketAlt size={10} /></div>
+              </div>
+              <h4 className="text-xl font-black font-mono text-slate-800">3 <span className="text-xs text-slate-400 font-sans tracking-normal font-bold">Aktif</span></h4>
             </div>
           </div>
         </div>
 
-        {/* ===== 2. GRID KONTEN UTAMA ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-start">
+        {/* ===== 2. MAIN CONTENT GRID ===== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start pt-2">
 
-          {/* ====== KOLOM KIRI: WIDGET & NAVIGASI ====== */}
-          <div className="lg:col-span-4 space-y-5 sm:space-y-6">
+          {/* ====== KOLOM KIRI: WIDGETS ====== */}
+          <div className="lg:col-span-4 space-y-6">
 
-            {/* Widget Garasi Virtual */}
-            <div className="bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-6 shadow-sm relative overflow-hidden group">
-              <div className="absolute right-0 top-0 w-24 h-24 bg-slate-50 rounded-bl-full -z-0"></div>
-              <FaMotorcycle className="absolute right-4 top-4 text-slate-100 text-5xl -z-0 group-hover:scale-110 transition-transform" />
+            {/* DARK MODE VIRTUAL GARAGE WIDGET */}
+            <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-gradient-to-bl from-slate-800 to-transparent rounded-bl-full opacity-50"></div>
+              <FaMotorcycle className="absolute -right-2 -bottom-2 text-slate-800/80 text-7xl transform -rotate-12 group-hover:scale-110 transition-transform duration-500" />
 
               <div className="relative z-10">
-                <span className="text-[10px] font-black text-[#e11d48] bg-red-50 px-2.5 py-1 rounded-md uppercase tracking-widest block w-max mb-3">
-                  {t('virtual_garage')}
-                </span>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[9px] font-black text-slate-900 bg-[#e11d48] px-2.5 py-1 rounded-md uppercase tracking-widest shadow-md shadow-red-500/20">
+                    Garasi Virtual
+                  </span>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                </div>
+
                 {user.motor_type ? (
-                  <>
-                    <h3 className="text-sm font-black text-slate-800 tracking-tight">{user.motor_type}</h3>
-                    <p className="text-[10px] text-slate-400 font-mono font-bold mt-1">CC: {user.motor_cc || '?'} | Tahun: {user.motor_year || '?'}</p>
-                    <button className="mt-4 text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-800 border-b-2 border-slate-200 hover:border-slate-800 pb-0.5 transition-colors">
-                      Edit Spesifikasi →
+                  <div className="space-y-1 mt-2">
+                    <h3 className="text-xl font-black text-white tracking-tight">{user.motor_type}</h3>
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wider block mb-0.5">Kapasitas</span>
+                        <span className="text-xs text-white font-mono font-bold">{user.motor_cc || '?'} CC</span>
+                      </div>
+                      <div className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wider block mb-0.5">Tahun</span>
+                        <span className="text-xs text-white font-mono font-bold">{user.motor_year || '?'}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => navigate('/profile/settings')} className="mt-5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-1 group/btn">
+                      Sesuaikan Data <FaChevronRight size={8} className="group-hover/btn:translate-x-1 transition-transform" />
                     </button>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <p className="text-xs text-slate-400 font-medium mb-4 leading-relaxed">Daftarkan motor modifikasimu untuk rekomendasi sparepart PNP.</p>
+                  <div className="mt-2">
+                    <p className="text-xs text-slate-400 font-medium mb-5 leading-relaxed pr-6">Sinkronisasi data motor untuk mendapatkan rekomendasi part Plug & Play otomatis.</p>
                     <button
                       onClick={() => navigate('/profile/settings')}
-                      className="w-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-slate-800 transition-colors"
+                      className="w-full bg-white text-slate-900 text-[10px] font-black uppercase tracking-widest py-3.5 rounded-xl hover:bg-slate-100 transition-colors shadow-lg active:scale-95"
                     >
-                      {t('add_motorcycle_btn')}
+                      + Tambah Motor
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Menu Navigasi Toko */}
-            <div className="bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 sm:px-2.5 block mb-3">{t('store_activity')}</span>
-
-              <div
-                onClick={() => navigate('/cart')}
-                className="flex items-center justify-between p-3 sm:p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group"
-              >
-                <span className="flex items-center gap-2 sm:gap-3">
-                  <FaShoppingBag className="text-slate-400 group-hover:text-[#e11d48] flex-shrink-0" size={14} />
-                  {t('shopping_cart')}
-                </span>
-                <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px] flex-shrink-0" />
+            {/* ELEGANT NAVIGATION MENU */}
+            <div className="bg-white border border-slate-100 rounded-[2rem] p-3 shadow-sm">
+              <div className="px-4 pt-3 pb-2">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aktivitas Akun</span>
               </div>
 
-              <div
-                onClick={() => { orders.length > 0 ? setSelectedOrder({ ...orders[0], id: orders[0].order_id || orders[0].id }) : alert(t('no_active_orders_alert')); }}
-                className="flex items-center justify-between p-3 sm:p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group"
-              >
-                <span className="flex items-center gap-2 sm:gap-3">
-                  <FaBoxOpen className="text-slate-400 group-hover:text-[#e11d48] flex-shrink-0" size={14} />
-                  {t('track_latest_order')}
-                </span>
-                <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px] flex-shrink-0" />
-              </div>
-
-              <div
-                onClick={() => navigate('/profile/reviews-history')}
-                className="flex items-center justify-between p-3 sm:p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group border-t border-slate-100 pt-3 mt-1"
-              >
-                <span className="flex items-center gap-2 sm:gap-3">
-                  <FaCommentMedical className="text-slate-400 group-hover:text-[#e11d48] flex-shrink-0" size={14} />
-                  {t('my_review_history')}
-                </span>
-                <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px] flex-shrink-0" />
-              </div>
-
-              <div className="flex items-center justify-between p-3 sm:p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group">
-                <span className="flex items-center gap-2 sm:gap-3">
-                  <FaHeadset className="text-slate-400 group-hover:text-[#e11d48] flex-shrink-0" size={14} />
-                  {t('mechanic_support')}
-                </span>
-                <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px] flex-shrink-0" />
-              </div>
-
-              {user.role === 'admin' && (
-                <div
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center justify-between p-3 sm:p-3.5 text-xs font-bold text-amber-600 hover:bg-amber-50/50 rounded-xl cursor-pointer transition-colors group border-t border-dashed border-slate-200 mt-2 pt-4"
-                >
-                  <span className="flex items-center gap-2 sm:gap-3">
-                    <FaCogs className="text-amber-500 flex-shrink-0" size={14} />
-                    {t('admin_dashboard')}
-                  </span>
-                  <FaChevronRight className="text-amber-400 text-[10px] flex-shrink-0" />
+              <div className="space-y-1">
+                <div onClick={() => navigate('/cart')} className="flex items-center justify-between p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-white group-hover:border-slate-200 group-hover:shadow-sm transition-all">
+                      <FaShoppingBag className="text-slate-400 group-hover:text-slate-700" size={12} />
+                    </div>
+                    Keranjang Belanja
+                  </div>
+                  <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px]" />
                 </div>
-              )}
+
+                <div onClick={() => { orders.length > 0 ? setSelectedOrder({ ...orders[0], id: orders[0].order_id || orders[0].id }) : alert(t('no_active_orders_alert')); }} className="flex items-center justify-between p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-white group-hover:border-slate-200 group-hover:shadow-sm transition-all">
+                      <FaBoxOpen className="text-slate-400 group-hover:text-slate-700" size={12} />
+                    </div>
+                    Lacak Pesanan Terakhir
+                  </div>
+                  <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px]" />
+                </div>
+
+                <div onClick={() => navigate('/profile/reviews-history')} className="flex items-center justify-between p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-white group-hover:border-slate-200 group-hover:shadow-sm transition-all">
+                      <FaCommentMedical className="text-slate-400 group-hover:text-slate-700" size={12} />
+                    </div>
+                    Riwayat Ulasan Part
+                  </div>
+                  <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px]" />
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-white group-hover:border-slate-200 group-hover:shadow-sm transition-all">
+                      <FaHeadset className="text-slate-400 group-hover:text-slate-700" size={12} />
+                    </div>
+                    Bantuan Mekanik
+                  </div>
+                  <FaChevronRight className="text-slate-300 group-hover:text-slate-500 text-[10px]" />
+                </div>
+
+                {user.role === 'admin' && (
+                  <div className="pt-2 mt-2 border-t border-slate-100">
+                    <div onClick={() => navigate('/admin')} className="flex items-center justify-between p-3.5 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-xl cursor-pointer transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100/50 border border-amber-200 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
+                          <FaCogs className="text-amber-500" size={12} />
+                        </div>
+                        Dashboard Admin
+                      </div>
+                      <FaChevronRight className="text-amber-400 text-[10px]" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
 
-          {/* ====== KOLOM KANAN: RIWAYAT BELANJA ====== */}
-          <div className="lg:col-span-8 bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-6 md:p-8 shadow-sm space-y-5 sm:space-y-6">
-            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-4 flex items-center gap-2">
-              <span className="w-1.5 h-4 bg-[#e11d48] rounded-full flex-shrink-0"></span>
-              <span>📦 {t('your_transaction_history')}</span>
-            </h3>
+          {/* ====== KOLOM KANAN: RIWAYAT TRANSAKSI ====== */}
+          <div className="lg:col-span-8 space-y-4">
+
+            <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 bg-[#e11d48] rounded-full"></span>
+                  Riwayat Belanja
+                </h3>
+                <p className="text-[10px] font-medium text-slate-400 mt-1">Pantau status pengiriman komponen pesananmu di sini.</p>
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Total Dibelanjakan</p>
+                <p className="text-lg font-black text-slate-800 font-mono tracking-tight">{formatPrice(totalSpent)}</p>
+              </div>
+            </div>
 
             {loadingOrders ? (
-              <div className="space-y-4 py-4 animate-pulse">
-                <div className="h-24 bg-slate-50 border border-slate-100 rounded-2xl w-full"></div>
-                <div className="h-24 bg-slate-50 border border-slate-100 rounded-2xl w-full"></div>
+              <div className="space-y-4 animate-pulse">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-28 bg-white border border-slate-100 rounded-[1.5rem] w-full"></div>
+                ))}
               </div>
             ) : orders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-14 sm:py-16 text-slate-400 gap-3">
-                <div className="p-5 sm:p-6 bg-slate-50 rounded-full text-slate-300 text-3xl border border-slate-100 shadow-inner">
+              <div className="bg-white border border-slate-100 rounded-[2rem] flex flex-col items-center justify-center py-20 text-center shadow-sm">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 text-3xl mb-4 shadow-inner">
                   <FaBoxOpen />
                 </div>
-                <p className="text-sm font-black text-slate-800 mt-2 uppercase tracking-tight">{t('no_transaction_title')}</p>
-                <p className="text-xs text-slate-400 max-w-sm text-center leading-relaxed px-4">{t('no_transaction_desc')}</p>
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wide">Belum Ada Transaksi</h4>
+                <p className="text-xs text-slate-400 mt-2 max-w-xs leading-relaxed">Garasi belanjamu masih kosong. Ayo cari part modifikasi pertamamu sekarang!</p>
                 <button
                   onClick={() => navigate('/')}
-                  className="mt-4 text-xs font-black text-white bg-[#e11d48] hover:bg-red-700 uppercase tracking-wider px-6 py-3 rounded-xl shadow-md transition-all active:scale-95"
+                  className="mt-6 text-[10px] font-black text-white bg-slate-900 hover:bg-[#e11d48] uppercase tracking-widest px-8 py-3.5 rounded-xl shadow-lg hover:shadow-red-500/20 transition-all active:scale-95"
                 >
-                  {t('start_shopping_parts')}
+                  Jelajahi Katalog Part
                 </button>
               </div>
             ) : (
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-4">
                 {orders.map((item, index) => {
                   const itemPrice = Number(item.item_subtotal || item.price || 0);
+                  const isDone = item.status === 'Selesai';
+                  const isShipping = item.status === 'Pengiriman';
+
                   return (
                     <div
                       key={`${item.order_id}-${item.product_id || index}`}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-white border border-slate-100 rounded-2xl gap-4 sm:gap-5 text-xs hover:border-[#e11d48]/40 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300 group"
+                      className="bg-white border border-slate-100 rounded-[1.5rem] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-5 hover:shadow-xl hover:shadow-slate-200/40 hover:border-slate-200 transition-all duration-300 group"
                     >
-                      {/* Info Produk */}
-                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        {/* Gambar Produk */}
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden flex-shrink-0 p-1.5 flex items-center justify-center relative shadow-inner group-hover:border-slate-200 transition-colors">
-                          {item.product_image || item.image ? (
-                            <img
-                              src={`${BASE_URL}/uploads/products/${item.product_image || item.image}`}
-                              alt=""
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-black text-slate-300 font-mono">HGI</span>
-                          )}
+                      {/* Produk Image */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-50 border border-slate-100/80 rounded-2xl flex-shrink-0 flex items-center justify-center p-2 relative group-hover:scale-105 transition-transform duration-300">
+                        {item.product_image || item.image ? (
+                          <img
+                            src={`${BASE_URL}/uploads/products/${item.product_image || item.image}`}
+                            alt=""
+                            className="w-full h-full object-contain mix-blend-multiply"
+                          />
+                        ) : (
+                          <span className="text-[10px] font-black text-slate-300 font-mono">HGI</span>
+                        )}
+                      </div>
+
+                      {/* Detail Transaksi */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="font-mono font-black text-slate-500 text-[9px] tracking-widest bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+                            #{item.order_number}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : isShipping ? 'bg-purple-50 border-purple-100 text-purple-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>
+                            {item.status}
+                          </span>
                         </div>
 
-                        {/* Detail */}
-                        <div className="min-w-0 space-y-1 sm:space-y-1.5 flex-1">
-                          {/* Badge Order & Status */}
-                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span className="font-mono font-black text-slate-900 text-[10px] sm:text-[11px] tracking-tight bg-slate-100 px-2 py-0.5 rounded">
-                              {item.order_number}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase border tracking-wider ${item.status === 'Selesai' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : item.status === 'Pengiriman' ? 'bg-purple-50 border-purple-200 text-purple-600' : 'bg-amber-50 border-amber-200 text-amber-600'}`}>
-                              {item.status}
-                            </span>
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate group-hover:text-[#e11d48] transition-colors mb-2">
+                          {item.product_name || 'Komponen Sparepart'}
+                        </h4>
+
+                        <div className="flex items-end gap-3 text-[10px]">
+                          <div>
+                            <p className="text-slate-400 font-medium mb-0.5">Kuantitas</p>
+                            <p className="font-black text-slate-700 font-mono">{item.quantity || 1} Pcs</p>
                           </div>
-
-                          {/* Nama Produk */}
-                          <h4 className="font-bold text-slate-800 text-xs sm:text-sm truncate group-hover:text-[#e11d48] transition-colors pr-2">
-                            {item.product_name || t('fallback_part_name')}
-                          </h4>
-
-                          {/* Qty & Subtotal */}
-                          <p className="text-[10px] text-slate-500 font-medium pt-0.5 flex flex-wrap items-center gap-x-1">
-                            <span>{t('quantity')}:</span>
-                            <span className="font-bold text-slate-800 font-mono">{item.quantity || 1} Pcs</span>
-                            <span className="text-slate-300 mx-1">|</span>
-                            <span>{t('subtotal')}:</span>
-                            <span className="font-black font-mono text-[#e11d48] text-[11px] sm:text-xs">{formatPrice(itemPrice)}</span>
-                          </p>
+                          <div className="w-px h-6 bg-slate-100"></div>
+                          <div>
+                            <p className="text-slate-400 font-medium mb-0.5">Subtotal</p>
+                            <p className="font-black text-[#e11d48] font-mono tracking-tight">{formatPrice(itemPrice)}</p>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Tombol Aksi */}
-                      <div className="flex-shrink-0 w-full sm:w-auto">
-                        {item.status === 'Selesai' ? (
+                      {/* Tombol Aksi Kanan */}
+                      <div className="w-full sm:w-auto flex-shrink-0 pt-3 sm:pt-0 border-t border-slate-50 sm:border-t-0 mt-2 sm:mt-0">
+                        {isDone ? (
                           <button
                             onClick={() => navigate('/profile/reviews-history')}
-                            className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl font-black text-[10px] uppercase tracking-wider border border-slate-200 hover:border-emerald-200 transition-all active:scale-95 shadow-sm"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border border-slate-200 hover:border-emerald-200 transition-all shadow-sm active:scale-95"
                           >
-                            <FaCheckCircle className="text-emerald-500" size={13} />
-                            {t('manage_part_review')}
+                            <FaCheckCircle size={12} className={isDone ? "text-emerald-500" : ""} />
+                            Beri Ulasan
                           </button>
                         ) : (
                           <button
                             onClick={() => setSelectedOrder({ ...item, id: item.order_id })}
-                            className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-[#e11d48] text-white px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl font-black text-[10px] uppercase tracking-wider shadow-md transition-all active:scale-95"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-[#e11d48] text-white px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-md active:scale-95"
                           >
-                            <FaMapMarkerAlt size={13} />
-                            {t('track_courier_map')}
+                            <FaMapMarkerAlt size={11} /> Lacak Kurir
                           </button>
                         )}
                       </div>
@@ -365,6 +435,7 @@ const Profile = () => {
         </div>
       </Container>
 
+      {/* MODAL LACAK PESANAN */}
       {selectedOrder && (
         <OrderTrackingModal
           order={selectedOrder}

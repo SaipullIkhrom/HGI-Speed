@@ -49,7 +49,7 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    if (window.confirm('Keluar dari akun HGI SPEED, Pul?')) {
+    if (window.confirm('Keluar dari akun HGI SPEED?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       navigate('/');

@@ -1,6 +1,5 @@
-export const Container = ({ children, className = "" }) => (
-  <div className={`max-w-[1200px] mx-auto px-4 ${className}`}>
+export const Container = ({ children, className = "", fluid = false }) => (
+  <div className={`mx-auto px-4 ${fluid ? 'w-full max-w-full' : 'max-w-[1200px]'} ${className}`}>
     {children}
   </div>
 );
-

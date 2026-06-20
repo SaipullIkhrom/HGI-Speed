@@ -12,7 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // 🛡️ SESSION GUARD: Cegah user masuk ke halaman login jika sudah punya token aktif
+  // 🛡️ SESSION GUARD
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -23,7 +23,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg(''); // Reset error setiap kali submit
+    setErrorMsg(''); 
 
     try {
      const res = await fetch(`${BASE_URL}/api/auth/login`, {

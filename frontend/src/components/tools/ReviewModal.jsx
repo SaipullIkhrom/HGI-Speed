@@ -3,7 +3,7 @@ import { FaStar, FaCloudUploadAlt, FaTimes, FaCheckCircle, FaTrash, FaShieldAlt,
 import { useTranslation } from 'react-i18next';
 import { BASE_URL } from "../../config/api";
 
-const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
+const ReviewModal = ({ order, product, onClose, onReviewSuccess }) => {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(null);
   const [comment, setComment] = useState('');
@@ -11,13 +11,18 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // 🛠️ INISIALISASI HOOKS GLOBAL
   const { t } = useTranslation();
+
+  // 🛠️ UNIVERSAL DATA EXTRACTOR: Bisa membaca data dari props 'order' ATAU 'product' (Bypass Role)
+  const targetProductId = product?.id || order?.product_id || order?.id;
+  const targetProductName = product?.name || order?.product_name || order?.name || 'Suku Cadang HGI';
+  const targetProductImage = product?.image || order?.product_image || order?.image;
+  const targetOrderId = order?.id || null; // Nullable jika diulas langsung dari luar transaksi (Admin/Guest test)
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (mediaFiles.length + files.length > 3) {
-      alert(t('max_upload_alert'));
+      alert(t('max_upload_alert') || 'Maksimal unggah adalah 3 file media!');
       return;
     }
     setMediaFiles((prev) => [...prev, ...files]);
@@ -29,39 +34,48 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+    if (!targetProductId) {
+      alert('Gagal mendeteksi ID Produk. Manifes tidak valid.');
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData();
-    formData.append('order_id', order.id);
-    formData.append('product_id', order.product_id);
+    // Gunakan pengondisian jika order_id tidak ada (Misal: Admin mengulas produk langsung)
+    if (targetOrderId) formData.append('order_id', targetOrderId);
+    formData.append('product_id', targetProductId);
     formData.append('rating', rating);
     formData.append('comment', comment);
 
     if (mediaFiles.length > 0) {
-      formData.append('media', mediaFiles[0]);
+      formData.append('media', mediaFiles[0]); // Mendukung single upload multimedia
     }
 
     try {
       const res = await fetch(`${BASE_URL}/api/reviews`, {
         method: 'POST',
         body: formData,
+        // Sertakan token multi-role jika ada di localStorage kamu
+        headers: {
+          ...(localStorage.getItem('token') && { 'Authorization': `Bearer ${localStorage.getItem('token')}` }),
+          ...(localStorage.getItem('adminToken') && { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` })
+        }
       });
 
       const resData = await res.json();
       if (res.ok && resData.success) {
         setIsSuccess(true);
-        if (onReviewSuccess) {
-          onReviewSuccess();
-        }
+        if (onReviewSuccess) onReviewSuccess();
         setTimeout(() => {
           onClose();
-        }, 2500);
+        }, 2200);
       } else {
-        alert(`${t('review_save_failed')} ${resData.message}`);
+        alert(`${t('review_save_failed') || 'Gagal menyimpan:'} ${resData.message}`);
       }
     } catch (error) {
       console.error('Error saat submit ulasan:', error);
-      alert(t('review_network_error'));
+      alert(t('review_network_error') || 'Kendala jaringan jaringan saat mengirim ulasan.');
     } finally {
       setLoading(false);
     }
@@ -69,7 +83,7 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
 
   if (isSuccess || order?.alreadyReviewed) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-4 font-sans animate-fadeIn">
+      <div className="fixed inset-0 z-[110] bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-4 font-sans animate-fadeIn">
         <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl text-center space-y-4 border border-emerald-100 relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-50 rounded-full -z-0 pointer-events-none"></div>
 
@@ -78,9 +92,9 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
           </div>
 
           <div className="space-y-1.5 relative z-10">
-            <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{t('review_locked_title')}</h3>
+            <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{t('review_locked_title') || 'Ulasan Terkunci'}</h3>
             <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-              {t('review_thanks_1')} <strong className="text-slate-800">{order.product_name}</strong> {t('review_thanks_2')}
+              {t('review_thanks_1') || 'Terima kasih, ulasan part'} <strong className="text-slate-800">{targetProductName}</strong> {t('review_thanks_2') || 'berhasil disimpan!'}
             </p>
           </div>
 
@@ -88,7 +102,7 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
             onClick={onClose}
             className="mt-2 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] py-2.5 rounded-xl uppercase tracking-wider transition-all"
           >
-            {t('close_window')}
+            {t('close_window') || 'Tutup Jendela'}
           </button>
         </div>
       </div>
@@ -96,8 +110,8 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4 font-sans text-slate-700 selection:bg-[#e11d48] selection:text-white animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 shadow-2xl relative space-y-5 border border-slate-100/80 overflow-hidden max-h-[90vh] overflow-y-auto scrollbar-none">
+    <div className="fixed inset-0 z-[110] bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4 font-sans text-slate-700 selection:bg-[#e11d48] selection:text-white animate-fadeIn">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 shadow-2xl relative space-y-5 border border-slate-100/80 max-h-[90vh] overflow-y-auto scrollbar-none">
 
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-[#e11d48] to-purple-600"></div>
 
@@ -112,18 +126,18 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
         {/* Header Modal */}
         <div className="text-center space-y-1 pt-2 flex flex-col items-center">
           <span className="inline-flex items-center gap-1.5 text-[9px] bg-red-50 text-[#e11d48] font-black px-3 py-1 rounded-md border border-red-100/60 uppercase tracking-widest">
-            <FaShieldAlt size={9} /> {t('garage_accreditation')}
+            <FaShieldAlt size={9} /> {t('garage_accreditation') || 'Akreditasi Garasi'}
           </span>
 
           <h3 className="text-base font-black text-slate-900 uppercase tracking-tight pt-2">
-            {t('give_part_rating')}
+            {t('give_part_rating') || 'Ulas Kualitas Komponen'}
           </h3>
 
-          {/* 📸 BARU: FRAME FOTO PRODUK DINAMIS DI DALAM MODAL */}
+          {/* Frame Gambar Fleksibel */}
           <div className="w-16 h-16 bg-slate-50 border border-slate-200/60 rounded-2xl overflow-hidden p-1 flex items-center justify-center shadow-sm mt-3 relative group">
-            {order.product_image || order.image ? (
+            {targetProductImage ? (
               <img
-                src={`${BASE_URL}/uploads/products/${order.product_image || order.image}`}
+                src={`${BASE_URL}/uploads/products/${targetProductImage}`}
                 alt=""
                 className="w-full h-full object-cover rounded-xl"
                 onError={(e) => {
@@ -134,26 +148,27 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
             ) : null}
             <div
               className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50"
-              style={{ display: (order.product_image || order.image) ? 'none' : 'flex' }}
+              style={{ display: targetProductImage ? 'none' : 'flex' }}
             >
               <FaBox size={20} />
             </div>
           </div>
 
           <p className="text-xs font-black text-slate-800 block mt-2 px-1 truncate max-w-[280px]">
-            {order.product_name}
+            {targetProductName}
           </p>
 
-          <p className="text-[9px] text-slate-400 font-mono font-black bg-slate-50 border border-slate-200/60 px-2.5 py-0.5 rounded-md inline-block mt-1">
-            {t('receipt')} {order.order_number}
-          </p>
+          {order?.order_number && (
+            <p className="text-[9px] text-slate-400 font-mono font-black bg-slate-50 border border-slate-200/60 px-2.5 py-0.5 rounded-md inline-block mt-1">
+              {t('receipt') || 'Nota'} {order.order_number}
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmitReview} className="space-y-4">
-
-          {/* Interactive Star Rating Box */}
+          {/* Interactive Star Rating */}
           <div className="flex flex-col items-center gap-2 py-4 bg-gradient-to-b from-slate-50/50 to-slate-50 border border-slate-100 rounded-2xl shadow-inner">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('mechanic_satisfaction')}</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('mechanic_satisfaction') || 'Kepuasan Mekanik'}</label>
             <div className="flex items-center gap-2">
               {[...Array(5)].map((_, index) => {
                 const currentRating = index + 1;
@@ -178,16 +193,16 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
               })}
             </div>
             <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wide mt-1">
-              {rating === 5 ? t('rating_5') : rating === 4 ? t('rating_4') : rating === 3 ? t('rating_3') : rating === 2 ? t('rating_2') : t('rating_1')}
+              {rating === 5 ? (t('rating_5') || 'Sempurna') : rating === 4 ? (t('rating_4') || 'Bagus') : rating === 3 ? (t('rating_3') || 'Cukup') : rating === 2 ? (t('rating_2') || 'Buruk') : (t('rating_1') || 'Kritis')}
             </span>
           </div>
 
-          {/* Textarea Input Review */}
+          {/* Textarea Input */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">{t('review_comment_label')}</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">{t('review_comment_label') || 'Isi Ulasan Teknis'}</label>
             <textarea
               rows="3"
-              placeholder={t('review_comment_placeholder')}
+              placeholder={t('review_comment_placeholder') || 'Bagaimana kualitas produk setelah dipasang di motor?...'}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-800 focus:border-[#e11d48] focus:ring-1 focus:ring-[#e11d48]/20 outline-none transition-all resize-none leading-relaxed font-medium shadow-sm"
@@ -195,14 +210,13 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
             />
           </div>
 
-          {/* Media Upload Area */}
+          {/* Media Upload */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">{t('media_attachment_label')}</label>
-
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">{t('media_attachment_label') || 'Lampiran Bukti Fisik'}</label>
             <div className="relative border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-2xl p-5 hover:bg-slate-50/40 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer group bg-white shadow-sm">
               <FaCloudUploadAlt size={24} className="text-slate-300 group-hover:text-[#e11d48] transition-colors" />
-              <span className="text-[11px] font-black text-slate-700 tracking-tight">{t('choose_file')}</span>
-              <span className="text-[9px] text-slate-400 font-medium">{t('media_guideline')}</span>
+              <span className="text-[11px] font-black text-slate-700 tracking-tight">{t('choose_file') || 'Pilih Berkas'}</span>
+              <span className="text-[9px] text-slate-400 font-medium">{t('media_guideline') || 'Format Gambar / Video (Maks 3)'}</span>
               <input
                 type="file"
                 multiple
@@ -212,7 +226,6 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
               />
             </div>
 
-            {/* Render Preview Media Dinamis */}
             {mediaFiles.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mt-2 p-2 bg-slate-50 border border-slate-100 rounded-2xl">
                 {mediaFiles.map((file, index) => {
@@ -241,13 +254,12 @@ const ReviewModal = ({ order, onClose, onReviewSuccess }) => {
             )}
           </div>
 
-          {/* Submit Action Button */}
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-[#e11d48] hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black text-xs py-4 rounded-xl transition-all shadow-md active:scale-[0.99] tracking-widest uppercase shadow-red-100 mt-2 flex items-center justify-center gap-2"
           >
-            {loading ? t('sync_review') : t('send_review')}
+            {loading ? (t('sync_review') || 'Menyinkronkan...') : (t('send_review') || 'Kirim Ulasan Komponen')}
           </button>
         </form>
       </div>

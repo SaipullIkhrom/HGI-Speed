@@ -13,13 +13,13 @@ const AdminStock = () => {
 
   // State untuk penampung data Invoice cetak PDF
   const [invoiceData, setInvoiceData] = useState(null);
-  const [triggerFetch, setTriggerFetch] = useState(0); // Alternatif pemicu muat ulang data
+  const [triggerFetch, setTriggerFetch] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
 
     (async () => {
-      setLoading(true); // <-- PINDAHKAN KE SINI (Aman di dalam ruang lingkup async)
+      setLoading(true);
       try {
         const res = await fetch(`${BASE_URL}/api/products`);
         const resData = await res.json();
@@ -82,7 +82,7 @@ const AdminStock = () => {
         });
 
         alert('Data Inventori Stok Berhasil Diperbarui!');
-        setTriggerFetch(prev => prev + 1); // ALTERNATIF: Memicu useEffect jalan kembali secara otomatis
+        setTriggerFetch(prev => prev + 1);
       } else {
         alert(resData.message || 'Gagal memperbarui inventori gudang.');
       }

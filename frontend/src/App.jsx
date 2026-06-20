@@ -81,15 +81,8 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/settings" element={<ProfileSettings />} />
 
-        {/* Rute Riwayat Ulasan Terproteksi Aman */}
-        <Route
-          path="/profile/reviews-history"
-          element={
-            <ProtectedMemberRoute>
-              <ReviewHistory />
-            </ProtectedMemberRoute>
-          }
-        />
+        {/* 🛠️ FIX UTAMA: Sekarang ReviewHistory bisa langsung diakses bebas oleh semua User/Role */}
+        <Route path="/profile/reviews-history" element={<ReviewHistory />} />
 
         {/* Rute Autentikasi Sistem */}
         <Route path="/login" element={<Login />} />
